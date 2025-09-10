@@ -16,8 +16,10 @@ GROQ_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
-# --- Initialize Firebase (env var or local file fallback) ---
-if not firebase_admin._apps:
+# --- Initialize Firebase lazily to avoid import-time failures on deploy ---
+def ensure_firebase_initialized() -> bool:
+    if firebase_admin._apps:
+        return True
     firebase_key_env = os.getenv("FIREBASE_KEY")
     cred = None
     if firebase_key_env:
@@ -25,16 +27,16 @@ if not firebase_admin._apps:
             cred_dict = json.loads(firebase_key_env)
             cred = credentials.Certificate(cred_dict)
         except json.JSONDecodeError:
-            pass
+            cred = None
     if cred is None:
         key_path = os.path.join(os.getcwd(), "firebase_key.json")
         if os.path.exists(key_path):
             cred = credentials.Certificate(key_path)
     if cred is None:
-        raise ValueError("Firebase credentials not found. Set FIREBASE_KEY or provide firebase_key.json.")
-
+        return False
     database_url = os.getenv("FIREBASE_DATABASE_URL", "https://ai-games-b5c1b-default-rtdb.firebaseio.com/")
     firebase_admin.initialize_app(cred, {"databaseURL": database_url})
+    return True
 
 
 # --- Groq API Call ---
@@ -95,6 +97,8 @@ class RoomActionRequest(BaseModel):
 
 @app.post("/room-action")
 def room_action(request: RoomActionRequest):
+    if not ensure_firebase_initialized():
+        raise HTTPException(status_code=500, detail="Firebase not configured. Set FIREBASE_KEY or include firebase_key.json.")
     room_ref = get_room_ref(request.room_code)
     room = room_ref.get()
 
