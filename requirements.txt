@@ -6,3 +6,4 @@ groq
 fastapi
 firebase-admin
 streamlit-autorefresh
+uvicorn
