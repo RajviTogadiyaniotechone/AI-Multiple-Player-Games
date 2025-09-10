@@ -1,9 +1,0 @@
-openai
-streamlit
-python-dotenv
-emoji
-groq
-fastapi
-firebase-admin
-streamlit-autorefresh
-uvicorn
