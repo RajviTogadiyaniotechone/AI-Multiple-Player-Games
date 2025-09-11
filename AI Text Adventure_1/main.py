@@ -18,25 +18,42 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # --- Initialize Firebase lazily to avoid import-time failures on deploy ---
 def ensure_firebase_initialized() -> bool:
+    """Initialize Firebase with proper error handling for deployment"""
     if firebase_admin._apps:
         return True
-    firebase_key_env = os.getenv("FIREBASE_KEY")
-    cred = None
-    if firebase_key_env:
-        try:
-            cred_dict = json.loads(firebase_key_env)
-            cred = credentials.Certificate(cred_dict)
-        except json.JSONDecodeError:
-            cred = None
-    if cred is None:
-        key_path = os.path.join(os.getcwd(), "firebase_key.json")
-        if os.path.exists(key_path):
-            cred = credentials.Certificate(key_path)
-    if cred is None:
+    
+    try:
+        firebase_key_env = os.getenv("FIREBASE_KEY")
+        cred = None
+        
+        if firebase_key_env:
+            try:
+                cred_dict = json.loads(firebase_key_env)
+                cred = credentials.Certificate(cred_dict)
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Warning: Failed to parse FIREBASE_KEY: {e}")
+                cred = None
+        
+        if cred is None:
+            key_path = os.path.join(os.getcwd(), "firebase_key.json")
+            if os.path.exists(key_path):
+                try:
+                    cred = credentials.Certificate(key_path)
+                except Exception as e:
+                    print(f"Warning: Failed to load firebase_key.json: {e}")
+                    cred = None
+        
+        if cred is None:
+            print("Warning: No Firebase credentials found. Firebase features will be disabled.")
+            return False
+        
+        database_url = os.getenv("FIREBASE_DATABASE_URL", "https://ai-games-b5c1b-default-rtdb.firebaseio.com/")
+        firebase_admin.initialize_app(cred, {"databaseURL": database_url})
+        return True
+        
+    except Exception as e:
+        print(f"Warning: Firebase initialization failed: {e}")
         return False
-    database_url = os.getenv("FIREBASE_DATABASE_URL", "https://ai-games-b5c1b-default-rtdb.firebaseio.com/")
-    firebase_admin.initialize_app(cred, {"databaseURL": database_url})
-    return True
 
 
 # --- Groq API Call ---
@@ -86,6 +103,18 @@ def init_room(room_code: str) -> None:
 
 
 app = FastAPI(title="Multiplayer Story Game API")
+
+
+@app.get("/")
+def health_check():
+    """Health check endpoint for deployment monitoring"""
+    return {"status": "healthy", "message": "Multiplayer Story Game API is running"}
+
+
+@app.get("/health")
+def health():
+    """Alternative health check endpoint"""
+    return {"status": "ok"}
 
 
 class RoomActionRequest(BaseModel):
