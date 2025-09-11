@@ -16,11 +16,7 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # --- Initialize Firebase lazily to avoid import-time failures on deploy ---
 def ensure_firebase_initialized() -> bool:
-    """Initialize Firebase with proper error handling for deployment.
-
-    All firebase_admin imports are done lazily to avoid failing at module import time
-    when deploying (e.g., if env vars are missing).
-    """
+    """Initialize Firebase with robust, lazy imports to avoid import-time failures."""
     try:
         import firebase_admin  # type: ignore
         from firebase_admin import credentials  # type: ignore
@@ -79,7 +75,6 @@ def call_groq_api(prompt: str, max_tokens: int = 200) -> str:
 
 # --- Firebase helpers ---
 def get_room_ref(room_code: str):
-    # Import lazily to avoid module import-time failures
     from firebase_admin import db  # type: ignore
     return db.reference(f"rooms/{room_code}")
 
