@@ -6,8 +6,6 @@ import json
 import uuid
 import requests
 from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials, db
 
 
 # --- Load environment ---
@@ -18,14 +16,21 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # --- Initialize Firebase lazily to avoid import-time failures on deploy ---
 def ensure_firebase_initialized() -> bool:
-    """Initialize Firebase with proper error handling for deployment"""
-    if firebase_admin._apps:
-        return True
-    
+    """Initialize Firebase with proper error handling for deployment.
+
+    All firebase_admin imports are done lazily to avoid failing at module import time
+    when deploying (e.g., if env vars are missing).
+    """
     try:
+        import firebase_admin  # type: ignore
+        from firebase_admin import credentials  # type: ignore
+
+        if firebase_admin._apps:
+            return True
+
         firebase_key_env = os.getenv("FIREBASE_KEY")
         cred = None
-        
+
         if firebase_key_env:
             try:
                 cred_dict = json.loads(firebase_key_env)
@@ -33,7 +38,7 @@ def ensure_firebase_initialized() -> bool:
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"Warning: Failed to parse FIREBASE_KEY: {e}")
                 cred = None
-        
+
         if cred is None:
             key_path = os.path.join(os.getcwd(), "firebase_key.json")
             if os.path.exists(key_path):
@@ -42,15 +47,15 @@ def ensure_firebase_initialized() -> bool:
                 except Exception as e:
                     print(f"Warning: Failed to load firebase_key.json: {e}")
                     cred = None
-        
+
         if cred is None:
             print("Warning: No Firebase credentials found. Firebase features will be disabled.")
             return False
-        
+
         database_url = os.getenv("FIREBASE_DATABASE_URL", "https://ai-games-b5c1b-default-rtdb.firebaseio.com/")
         firebase_admin.initialize_app(cred, {"databaseURL": database_url})
         return True
-        
+
     except Exception as e:
         print(f"Warning: Firebase initialization failed: {e}")
         return False
@@ -74,6 +79,8 @@ def call_groq_api(prompt: str, max_tokens: int = 200) -> str:
 
 # --- Firebase helpers ---
 def get_room_ref(room_code: str):
+    # Import lazily to avoid module import-time failures
+    from firebase_admin import db  # type: ignore
     return db.reference(f"rooms/{room_code}")
 
 
