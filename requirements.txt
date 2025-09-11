@@ -7,3 +7,5 @@ fastapi
 firebase-admin
 streamlit-autorefresh
 uvicorn
+requests
+pydantic
