@@ -5,8 +5,7 @@ from typing import Optional, Dict, Any
 # Import the game logic and global store from the Streamlit app module
 # Run uvicorn with working directory set to this folder:
 #   cd "AI Bingo" && uvicorn bingo_api:api --host 0.0.0.0 --port 8000 --reload
-from app import BingoGame, BingoCard, get_global_games  # type: ignore
-
+from ai_bingo.app import BingoGame, BingoCard, get_global_games
 
 class BingoActionRequest(BaseModel):
     action: str  # create | join | start | call | mark | state | restart_round | leave
@@ -136,3 +135,4 @@ def bingo_action(req: BingoActionRequest):
 # Optional standalone FastAPI for running this module alone
 api = FastAPI(title="Bingo Game API (Standalone)")
 api.include_router(router)
+
