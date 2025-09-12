@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, db
-
+from ai_bingo.bingo_api import router as bingo_router
 
 # --- Load environment ---
 load_dotenv()
@@ -102,7 +102,10 @@ def init_room(room_code: str) -> None:
     })
 
 
-app = FastAPI(title="Multiplayer Story Game API")
+app = FastAPI(title="Unified Games API")
+
+# Mount Bingo routes directly under the same app with /api/Bingo prefix
+app.include_router(bingo_router)
 
 
 @app.get("/")
