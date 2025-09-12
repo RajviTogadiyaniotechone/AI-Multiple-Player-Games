@@ -148,16 +148,17 @@ if "current_room" in st.session_state and "current_user" in st.session_state:
                     "last_round_scored": round_id
                 })
 
-    # --- Display updated leaderboard ---
-    st.subheader("🏆 Leaderboard")
-    players = room_ref.child("players").get() or {}
+    # # --- Display updated leaderboard ---
+    # st.subheader("🏆 Leaderboard")
+    # players = room_ref.child("players").get() or {}
 
-    def get_score(data):
-        return data.get("score", 0) if isinstance(data, dict) else data
+    # def get_score(data):
+    #     return data.get("score", 0) if isinstance(data, dict) else data
 
-    for player, data in sorted(players.items(), key=lambda x: -get_score(x[1])):
-        st.write(f"{player}: {get_score(data)} points")
+    # for player, data in sorted(players.items(), key=lambda x: -get_score(x[1])):
+    #     st.write(f"{player}: {get_score(data)} points")
 
     # --- Auto-refresh every 5s to sync ---
     st_autorefresh(interval=5000, key="refresh")
+
 
